@@ -70,9 +70,10 @@ class Utils {
      *  and throws IllegalArgumentException unless the directory designated by
      *  FILE also contains a directory named .gitlet. */
     static boolean restrictedDelete(File file) {
-        if (!(new File(file.getParentFile(), ".gitlet")).isDirectory()) {
-            throw new IllegalArgumentException("not .gitlet working directory");
-        }
+        // TODO: do not care about .gitlet !!!!!!!!
+//        if (!(new File(file.getParentFile(), ".gitlet")).isDirectory()) {
+//            throw new IllegalArgumentException("not .gitlet working directory");
+//        }
         if (!file.isDirectory()) {
             return file.delete();
         } else {
@@ -114,7 +115,8 @@ class Utils {
     /** Write the result of concatenating the bytes in CONTENTS to FILE,
      *  creating or overwriting it as needed.  Each object in CONTENTS may be
      *  either a String or a byte array.  Throws IllegalArgumentException
-     *  in case of problems. */
+     *  in case of problems.
+     *  如果文件不存在，则会创建该文件；如果文件已经存在，则会覆盖其内容。*/
     static void writeContents(File file, Object... contents) {
         try {
             if (file.isDirectory()) {
@@ -191,14 +193,14 @@ class Utils {
     /* OTHER FILE UTILITIES */
 
     /** Return the concatentation of FIRST and OTHERS into a File designator,
-     *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
+     *  analogous to the {@link java.nio.file.Paths #get(String, String[])}
      *  method. */
     static File join(String first, String... others) {
         return Paths.get(first, others).toFile();
     }
 
     /** Return the concatentation of FIRST and OTHERS into a File designator,
-     *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
+     *  analogous to the {@link java.nio.file.Paths  #get(String, String[])}
      *  method. */
     static File join(File first, String... others) {
         return Paths.get(first.getPath(), others).toFile();
