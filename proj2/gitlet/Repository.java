@@ -303,13 +303,13 @@ public class Repository {
     public static void checkout(String commitID, String filename) {
         List<String> commitsID = plainFilenamesIn(Commit.COMMIT_FOLDER);
         // handle shortened id
-        if (commitID.length() == 6) {
-            for (String id : commitsID) {
-                if (id.substring(0, 7).equals(commitID)) {
-                    commitID = id;
-                }
+        for (String id : commitsID) {
+            if (id.substring(0, commitID.length())
+                    .equals(commitID)) {
+                commitID = id;
             }
         }
+
         if (!commitsID.contains(commitID)) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
