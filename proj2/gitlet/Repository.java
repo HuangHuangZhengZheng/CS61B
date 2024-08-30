@@ -2,6 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -132,7 +133,8 @@ public class Repository {
             System.exit(0);
         }
         // assume that add is existed
-        Map<String, String> addedFiles = readObject(join(STAGING, "add"), TreeMap.class);
+        File stagingForAdd = join(STAGING, "add");
+        TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
         if (addedFiles == null || addedFiles.isEmpty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
@@ -172,6 +174,7 @@ public class Repository {
         }
         // clean 'add' and 'remove', wrong? DO NOT DELETE the TreeMaps!
         addedFiles.clear();
+        writeObject(stagingForAdd, addedFiles);
         File stagingForRemove = join(STAGING, "remove");
         TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
         removedFiles.clear();
