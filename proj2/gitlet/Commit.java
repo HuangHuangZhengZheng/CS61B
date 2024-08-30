@@ -9,9 +9,7 @@ import java.util.*;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 
-
-import static gitlet.Utils.join;
-import static gitlet.Utils.readContentsAsString;
+import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
  *
@@ -20,7 +18,7 @@ import static gitlet.Utils.readContentsAsString;
  */
 public class Commit implements Serializable {
     /**
-     * TODO: add instance variables here.
+     *
      * List all instance variables of the Commit class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided one example for `message`.
@@ -37,9 +35,9 @@ public class Commit implements Serializable {
     private String secondParentID;
     private TreeMap<String, String> blobsID; // ---> <filename, ID>
     private final String branch;
-    /* TODO: fill in the rest of this class. */
+
     /* init "empty" one */
-    public Commit(){
+    public Commit() {
         message = "initial commit";
         parentID = null;
         secondParentID = null;
@@ -48,9 +46,9 @@ public class Commit implements Serializable {
         timestamp = df.format(z);
         blobsID = new TreeMap<>(); // empty
         branch = "master";
-        if (serializeTreeMap(blobsID) == null){
+        if (serializeTreeMap(blobsID) == null) {
             ID = Utils.sha1(message, timestamp);
-        }else{
+        } else {
             ID = Utils.sha1(message, timestamp, serializeTreeMap(blobsID));
         }
     }
@@ -72,64 +70,65 @@ public class Commit implements Serializable {
         }
     }
 
-    public static Commit fromFile(String ID){
-        return Utils.readObject(Utils.join(COMMIT_FOLDER, ID), Commit.class);
+    public static Commit fromFile(String id) {
+        return Utils.readObject(Utils.join(COMMIT_FOLDER, id), Commit.class);
     }
 
-    public void saveCommit(){
+    public void saveCommit() {
         File c = new File(COMMIT_FOLDER, ID);
-        try{
+        try {
             c.createNewFile();
-        } catch(IOException e){
+        } catch (IOException e) {
             // do nothing;
         }
         Utils.writeObject(c, this);
     }
 
-    public static void creatBranch(String branchName, String commitID){
+    public static void creatBranch(String branchName, String commitID) {
         File b = new File(BRANCHES_FOLDER, branchName);
         try {
             b.createNewFile();
-        } catch(IOException e){
+        } catch (IOException e) {
             // nothing
         }
         Utils.writeContents(b, commitID);
     }
     // update or create head, storing String current branch_name
-    public static void checkHead(String branchName){
+    public static void checkHead(String branchName) {
         File h = Utils.join(BRANCHES, "head");
         try {
             h.createNewFile();
-        } catch (IOException e){
+        } catch (IOException e) {
             //nothing
         }
         Utils.writeContents(h, branchName);
     }
 
-    public static Commit getCurrentCommit(){
+    public static Commit getCurrentCommit() {
         String currentBranch = readContentsAsString(join(Commit.BRANCHES, "head"));
         String headCommitID = readContentsAsString(join(Commit.BRANCHES_FOLDER, currentBranch));
         Commit c = fromFile(headCommitID);
         return c;
     }
-    public static String getCurrentBranch(){
+    public static String getCurrentBranch() {
         return readContentsAsString(join(Commit.BRANCHES, "head"));
     }
 
 
     // helper functions below
     @Override
-    public String toString(){
-        if (secondParentID == null){
+    public String toString() {
+        if (secondParentID == null) {
             return String.format(
               "===\ncommit %s\nDate: %s\n%s\n",
             ID, timestamp, message); // 结尾不需要 \n ?
-        }else{
+        } else {
             return String.format(
               "===\ncommit %s\nMerge: %s %s\nDate: %s\n%s\n",
-            ID, parentID.substring(0,8), secondParentID.substring(0,8), timestamp, message); // 结尾不需要 \n ?
+            ID, parentID.substring(0, 8), secondParentID.substring(0, 8), timestamp, message); // 结尾不需要 \n ?
         }
     }
+
     private static byte[] serializeTreeMap(TreeMap<String, String> treeMap) {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)) {
@@ -141,6 +140,10 @@ public class Commit implements Serializable {
             return null;
         }
     }
+    public static void setBranchHeadID(String branch, String commitID) {
+        writeContents(join(Commit.BRANCHES_FOLDER, branch), commitID);
+    }
+
 
     public String getID() {
         return ID;
@@ -169,5 +172,4 @@ public class Commit implements Serializable {
     public String getBranch() {
         return branch;
     }
-
 }

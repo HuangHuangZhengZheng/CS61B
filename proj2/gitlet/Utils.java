@@ -70,10 +70,9 @@ class Utils {
      *  and throws IllegalArgumentException unless the directory designated by
      *  FILE also contains a directory named .gitlet. */
     static boolean restrictedDelete(File file) {
-        // TODO: do not care about .gitlet !!!!!!!!
-//        if (!(new File(file.getParentFile(), ".gitlet")).isDirectory()) {
-//            throw new IllegalArgumentException("not .gitlet working directory");
-//        }
+        if (!(new File(file.getParentFile(), ".gitlet")).isDirectory()) {
+            throw new IllegalArgumentException("not .gitlet working directory");
+        }
         if (!file.isDirectory()) {
             return file.delete();
         } else {
@@ -116,7 +115,7 @@ class Utils {
      *  creating or overwriting it as needed.  Each object in CONTENTS may be
      *  either a String or a byte array.  Throws IllegalArgumentException
      *  in case of problems.
-     *  如果文件不存在，则会创建该文件；如果文件已经存在，则会覆盖其内容。*/
+     *  */
     static void writeContents(File file, Object... contents) {
         try {
             if (file.isDirectory()) {

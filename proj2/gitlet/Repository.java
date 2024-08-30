@@ -2,7 +2,6 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -10,16 +9,15 @@ import java.util.TreeSet;
 
 import static gitlet.Utils.*;
 
-// TODO: any imports you need here
 
 /** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class does at a high level.
+ *  It's a good idea to give a description here of what else this Class does at a high level.
  *
  *  @author HHZZ
  */
 public class Repository {
     /**
-     * TODO: add instance variables here.
+     *
      *
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
@@ -28,23 +26,39 @@ public class Repository {
 
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
-    /** The .gitlet directory. */
+    /** The .gitlet directory.
+     * note that Staging Area is considered to be part of Repo instead of a java class
+     * */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     public static final File STAGING = join(GITLET_DIR, "staging");
     public static final File STAGING_FILES = join(STAGING, "staging-files");
 
 
-    public static void init(){
+    public static void init() {
         // check if init yet
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdir();
-        }else{
+        } else {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
             System.exit(0);
         }
-        // already init gitlet dir
+        // already init gitlet dir, begin the SA
         STAGING.mkdir();
         STAGING_FILES.mkdir();
+        File stagingForAdd = join(STAGING, "add");
+        File stagingForRemove = join(STAGING, "remove");
+        TreeMap<String, String> addedFiles = new TreeMap<>();
+        TreeMap<String, String> removedFiles = new TreeMap<>();
+        try {
+            stagingForAdd.createNewFile();
+            stagingForRemove.createNewFile();
+        } catch (IOException e) {
+            // nothing here
+        }
+        writeObject(stagingForAdd, addedFiles);
+        writeObject(stagingForRemove, removedFiles);
+
+
         Commit.COMMIT_FOLDER.mkdir();
         Commit.BRANCHES.mkdir();
         Commit.BRANCHES_FOLDER.mkdir();
@@ -53,12 +67,12 @@ public class Repository {
         // begin commit & head & branch
         Commit commit = new Commit(); // create an "empty" commit
         commit.saveCommit();
-        Commit.creatBranch("master", commit.getID());// have master branch
+        Commit.creatBranch("master", commit.getID()); // have master branch
         Commit.checkHead("master"); // setup HEAD as master
     }
 
 
-    public static void add(String filename){
+    public static void add(String filename) {
         List<String> names = plainFilenamesIn(CWD);
         boolean found = false;
         TreeMap<String, String> addedFiles; // tracking files staging for addiction, --->  <Filename, ID>
@@ -66,24 +80,17 @@ public class Repository {
         Commit currentCommit = Commit.getCurrentCommit();
         // read add
         File stagingForAdd = join(STAGING, "add");
-        if (stagingForAdd.exists()) {
-            addedFiles = readObject(stagingForAdd, TreeMap.class); // see more in Things to avoid in spec!
-        }else{
-            try{
-                stagingForAdd.createNewFile();
-            } catch (IOException e) {
-                // nothing
-            }
-            addedFiles = new TreeMap<>();
-        }
+
+        addedFiles = readObject(stagingForAdd, TreeMap.class); // see more in Things to avoid in spec!
+
         // find file
-        for (String name : names){
-            if (name.equals(filename)){
+        for (String name : names) {
+            if (name.equals(filename)) {
                 found = true;
                 break;
             }
         }
-        if (!found){
+        if (!found) {
             System.out.println("File does not exist.");
             System.exit(0);
         }
@@ -95,14 +102,14 @@ public class Repository {
          * */
         String foundFileID = sha1(readContents(join(CWD, filename)));
         if (currentCommit.getBlobsID().containsValue(foundFileID) || addedFiles.containsKey(filename)) {
-            restrictedDelete(join(STAGING_FILES, foundFileID));
+            MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
             addedFiles.remove(filename);
         }
         // copy the file into staging area
         c = join(STAGING_FILES, foundFileID);
-        try{
+        try {
             c.createNewFile();
-        } catch (IOException e){
+        } catch (IOException e) {
             // nothing here
         }
         writeContents(c, readContents(join(CWD, filename)));
@@ -112,14 +119,14 @@ public class Repository {
         writeObject(stagingForAdd, addedFiles); // trying to cast, maybe wrong?
     }
 
-    public static void commit(String msg){
-        if (msg == null || msg.isBlank()){
+    public static void commit(String msg) {
+        if (msg == null || msg.isBlank()) {
             System.out.println("Please enter a commit message.");
             System.exit(0);
         }
         // assume that add is existed
         Map<String, String> addedFiles = readObject(join(STAGING, "add"), TreeMap.class);
-        if (addedFiles == null || addedFiles.isEmpty()){
+        if (addedFiles == null || addedFiles.isEmpty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
         }
@@ -139,29 +146,32 @@ public class Repository {
         newCommit.saveCommit();
 
         // update "head"
-        writeContents(join(Commit.BRANCHES_FOLDER, currentBranch), newCommit.getID());
+        Commit.setBranchHeadID(currentBranch, newCommit.getID());
 
         // copy file into Blobs folder......
         List<String> stagingFileIDs = plainFilenamesIn(STAGING_FILES);
-        for (String id : stagingFileIDs){
+        for (String id : stagingFileIDs) {
             File intoCommits = join(Blob.BLOB_FOLDER, id);
-            try{
+            try {
                 intoCommits.createNewFile();
-            } catch (IOException e){
+            } catch (IOException e) {
                 // nothing here
             }
             writeContents(intoCommits, readContents(join(STAGING_FILES, id)));
         }
         // clean staging area...
-        for (String id : stagingFileIDs){
-            restrictedDelete(join(STAGING_FILES, id));
+        for (String id : stagingFileIDs) {
+            MyUtils.restrictedDelete(join(STAGING_FILES, id));
         }
-        // clean 'add' and 'remove', wrong?
-        restrictedDelete(join(STAGING, "remove"));
-        restrictedDelete(join(STAGING, "add"));
+        // clean 'add' and 'remove', wrong? DO NOT DELETE the TreeMaps!
+        addedFiles.clear();
+        File stagingForRemove = join(STAGING, "remove");
+        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
+        removedFiles.clear();
+        writeObject(stagingForRemove, removedFiles);
     }
 
-    public static void rm(String filename){
+    public static void rm(String filename) {
         Commit currentCommit = Commit.getCurrentCommit();
         // assume that add is existed
         TreeMap<String, String> addedFiles = readObject(join(STAGING, "add"), TreeMap.class);
@@ -174,7 +184,7 @@ public class Repository {
         TreeMap<String, String> removedFiles;
         if (stagingForRemove.exists()) {
             removedFiles = readObject(stagingForRemove, TreeMap.class); // see more in Things to avoid in spec!
-        }else{
+        } else {
             removedFiles = new TreeMap<>();
         }
         /**
@@ -183,50 +193,51 @@ public class Repository {
          *  (do not remove it unless it is tracked in the current commit).
          * */
         if (currentCommit.getBlobsID().containsKey(filename)) {
-            removedFiles.put(filename, currentCommit.getBlobsID().get(filename)); // even though I think that it is useless to store removal's ID......
-            restrictedDelete(join(CWD, filename));
+            removedFiles.put(filename, currentCommit.getBlobsID().get(filename));
+            // even though I think that it is useless to store removal's ID......
+            MyUtils.restrictedDelete(join(CWD, filename));
         }
 
         // remove from staging area...
-        restrictedDelete(join(STAGING_FILES, addedFiles.get(filename)));
+        MyUtils.restrictedDelete(join(STAGING_FILES, addedFiles.get(filename)));
         // read-modify-write ---> update the TreeMaps!
         addedFiles.remove(filename);
         writeObject(stagingForRemove, removedFiles);
         writeObject(join(STAGING, "add"), addedFiles);
     }
 
-    public static void log(){
+    public static void log() {
         Commit currentCommit = Commit.getCurrentCommit();
-        while(currentCommit.getParentID() != null){
+        while (currentCommit.getParentID() != null) {
             System.out.println(currentCommit.toString());
             currentCommit = Commit.fromFile(currentCommit.getParentID());
         }
         System.out.println(currentCommit.toString());
     }
-    public static void global_log(){
+    public static void globalLog() {
         List<String> commitsID = plainFilenamesIn(Commit.COMMIT_FOLDER);
-        for (String id : commitsID){
+        for (String id : commitsID) {
             System.out.println(Commit.fromFile(id).toString());
         }
     }
 
-    public static void find(String msg){
+    public static void find(String msg) {
         List<String> commitsID = plainFilenamesIn(Commit.COMMIT_FOLDER);
         boolean found = false;
-        for (String id : commitsID){
+        for (String id : commitsID) {
             Commit commit = Commit.fromFile(id);
-            if (commit.getMessage().equals(msg)){
+            if (commit.getMessage().equals(msg)) {
                 found = true;
                 System.out.println(commit.getID());
             }
         }
-        if (!found){
+        if (!found) {
             System.out.println("Found no commit with that message.");
             System.exit(0);
         }
     }
 
-    public static void status(){
+    public static void status() {
         // === Branches ===
         System.out.println("=== Branches ===");
         String currentBranch = Commit.getCurrentBranch();
@@ -234,24 +245,24 @@ public class Repository {
         List<String> branchNames = plainFilenamesIn(Commit.BRANCHES_FOLDER);
         TreeSet<String> otherBranchNames = new TreeSet<>(branchNames);
         otherBranchNames.remove(currentBranch); // remove the current!
-        for (String branchName : otherBranchNames){
+        for (String branchName : otherBranchNames) {
             System.out.println(branchName);
         }
         System.out.println("");
         // === Staged Files ===
         System.out.println("=== Staged Files ===");
-        if (join(STAGING, "add").exists()){
+        if (join(STAGING, "add").exists()) {
             TreeMap<String, String> addedFiles = readObject(join(STAGING, "add"), TreeMap.class);
-            for (String filename : addedFiles.keySet()){
+            for (String filename : addedFiles.keySet()) {
                 System.out.println(filename);
             }
         }
         System.out.println("");
         // === Removed Files ===
         System.out.println("=== Removed Files ===");
-        if (join(STAGING, "remove").exists()){
+        if (join(STAGING, "remove").exists()) {
             TreeMap<String, String> removedFiles = readObject(join(STAGING, "remove"), TreeMap.class);
-            for (String filename : removedFiles.keySet()){
+            for (String filename : removedFiles.keySet()) {
                 System.out.println(filename);
             }
         }
@@ -265,12 +276,12 @@ public class Repository {
     }
 
 
-    public static void checkout(String commitID, String filename){
+    public static void checkout(String commitID, String filename) {
         List<String> commitsID = plainFilenamesIn(Commit.COMMIT_FOLDER);
         // handle shortened id
         if (commitID.length() == 6) {
-            for (String id : commitsID){
-                if (id.substring(0,7).equals(commitID)){
+            for (String id : commitsID) {
+                if (id.substring(0, 7).equals(commitID)) {
                     commitID = id;
                 }
             }
@@ -288,11 +299,11 @@ public class Repository {
         writeContents(checkedoutFile, readContents(join(Blob.BLOB_FOLDER, commit.getBlobsID().get(filename))));
 
         // The new version of the file is not staged. If add exists, then update add
-        File ADD = join(STAGING, "add");
-        if (ADD.exists()) {
-            TreeMap<String, String> addedFiles = readObject(ADD, TreeMap.class);
+        File stagingForAdd = join(STAGING, "add");
+        if (stagingForAdd.exists()) {
+            TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
             if (addedFiles.containsKey(filename)) {
-                restrictedDelete(join(STAGING_FILES, addedFiles.get(filename)));
+                MyUtils.restrictedDelete(join(STAGING_FILES, addedFiles.get(filename)));
                 addedFiles.remove(filename);
             }
             writeObject(join(STAGING, "add"), addedFiles);
@@ -300,13 +311,13 @@ public class Repository {
     }
 
 
-    public static void checkout(String branchname){
+    public static void checkout(String branchname) {
         List<String> branchNames = plainFilenamesIn(Commit.BRANCHES_FOLDER);
         if (!branchNames.contains(branchname)) {
             System.out.println("No such branch exists.");
             System.exit(0);
         }
-        if (Commit.getCurrentBranch().equals(branchname)){
+        if (Commit.getCurrentBranch().equals(branchname)) {
             System.out.println("No need to checkout the current branch.");
             System.exit(0);
         }
@@ -326,21 +337,21 @@ public class Repository {
         }
         // first delete those in original branch
         for (String filename : originalCommit.getBlobsID().keySet()) {
-            restrictedDelete(join(CWD, filename));
+            MyUtils.restrictedDelete(join(CWD, filename));
         }
         // then add back
         for (String filename : changedCommit.getBlobsID().keySet()) {
             writeContents(join(CWD, filename), Blob.getBlobContent(changedCommit.getBlobsID().get(filename)));
         }
         // clean staging area
-        restrictedDeleteAll(STAGING_FILES);
-        restrictedDelete(join(STAGING, "add"));
-        restrictedDelete(join(STAGING, "remove"));
+        MyUtils.restrictedDeleteAll(STAGING_FILES);
+        MyUtils.restrictedDelete(join(STAGING, "add"));
+        MyUtils.restrictedDelete(join(STAGING, "remove"));
     }
 
-    public static void branch(String branch){
+    public static void branch(String branch) {
         List<String> branchNames = plainFilenamesIn(Commit.BRANCHES_FOLDER);
-        if (branchNames.contains(branch)){
+        if (branchNames.contains(branch)) {
             System.out.println("A branch with that name already exists.");
             System.exit(0);
         }
@@ -349,26 +360,26 @@ public class Repository {
         writeContents(newBranch, currentCommit.getID());
     }
 
-    public static void removeBranch(String branchname){
+    public static void removeBranch(String branchname) {
         List<String> branchNames = plainFilenamesIn(Commit.BRANCHES_FOLDER);
-        if (!branchNames.contains(branchname)){
+        if (!branchNames.contains(branchname)) {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
-        if(readContentsAsString(join(Commit.BRANCHES, "head")).equals(branchname)){
+        if (readContentsAsString(join(Commit.BRANCHES, "head")).equals(branchname)) {
             System.out.println("Cannot remove the current branch.");
             System.exit(0);
         }
-        restrictedDelete(join(Commit.BRANCHES_FOLDER, branchname));
+        MyUtils.restrictedDelete(join(Commit.BRANCHES_FOLDER, branchname));
     }
 
-    public static void reset(String commitID){
+    public static void reset(String commitID) {
         Commit target = Commit.fromFile(commitID);
         String targetBranch = target.getBranch();
         checkout(targetBranch);
         Commit tBHead = Commit.getCurrentCommit();
         for (String filename : tBHead.getBlobsID().keySet()) {
-            restrictedDelete(join(CWD, filename));
+            MyUtils.restrictedDelete(join(CWD, filename));
         }
         for (String filename : target.getBlobsID().keySet()) {
             writeContents(join(CWD, filename), Blob.getBlobContent(target.getBlobsID().get(filename)));
@@ -376,18 +387,8 @@ public class Repository {
         writeContents(join(Commit.BRANCHES_FOLDER, targetBranch), target.getID());
     }
 
-    public static void merge(String branchname){
+    public static void merge(String branchname) {
 
     }
 
-
-
-    // some private helper functions here.
-    private static void restrictedDeleteAll(File Dir){
-        // assume that file already exists
-        List<String> fileNames = plainFilenamesIn(Dir);
-        for (String filename : fileNames){
-            restrictedDelete(join(Dir, filename));
-        }
-    }
 }
