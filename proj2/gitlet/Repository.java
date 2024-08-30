@@ -110,7 +110,8 @@ public class Repository {
             writeObject(stagingForRemove, removedFiles);
         }
         String foundFileID = sha1(readContents(join(CWD, filename)));
-        if (currentCommit.getBlobsID().containsValue(foundFileID)) {
+        if (currentCommit.getBlobsID().containsValue(foundFileID)
+                && currentCommit.getBlobsID().containsKey(filename)) {
             MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
             addedFiles.remove(filename);
             writeObject(stagingForAdd, addedFiles);
