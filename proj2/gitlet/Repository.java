@@ -336,7 +336,7 @@ public class Repository {
         }
     }
 
-
+    // 有问题！
     public static void checkout(String branchname) {
         List<String> branchNames = plainFilenamesIn(Commit.BRANCHES_FOLDER);
         if (!branchNames.contains(branchname)) {
@@ -354,9 +354,11 @@ public class Repository {
         // then switch the branch
         Commit.checkHead(branchname);
         Commit changedCommit = Commit.getCurrentCommit();
+        List<String> currentWorkingDirFileNames = plainFilenamesIn(CWD);
         for (String filename
                 : changedCommit.getBlobsID().keySet()) {
-            if (!originalCommit.getBlobsID().containsKey(filename)) {
+            if (!originalCommit.getBlobsID().containsKey(filename)
+                    && currentWorkingDirFileNames.contains(filename)) {
                 System.out.println("There is an untracked file in the way;"
                         + " delete it, or add and commit it first.");
                 Commit.checkHead(originalBranch); // back to the original branch
