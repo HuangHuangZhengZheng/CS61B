@@ -373,10 +373,16 @@ public class Repository {
             writeContents(join(CWD, filename),
                     Blob.getBlobContent(changedCommit.getBlobsID().get(filename)));
         }
-        // clean staging area
+        // clean staging area, add and reomove
         MyUtils.restrictedDeleteAll(STAGING_FILES);
-        MyUtils.restrictedDelete(join(STAGING, "add"));
-        MyUtils.restrictedDelete(join(STAGING, "remove"));
+        File stagingForAdd = join(STAGING, "add");
+        File stagingForRemove = join(STAGING, "remove");
+        TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
+        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
+        addedFiles.clear();
+        removedFiles.clear();
+        writeObject(stagingForAdd, addedFiles);
+        writeObject(stagingForRemove, removedFiles);
     }
 
     public static void branch(String branch) {
@@ -386,8 +392,7 @@ public class Repository {
             System.exit(0);
         }
         Commit currentCommit = Commit.getCurrentCommit();
-        File newBranch = join(Commit.BRANCHES_FOLDER, branch);
-        writeContents(newBranch, currentCommit.getID());
+        Commit.creatBranch(branch, currentCommit.getID());
     }
 
     public static void removeBranch(String branchname) {
