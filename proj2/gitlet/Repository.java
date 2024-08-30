@@ -413,7 +413,9 @@ public class Repository {
     public static void reset(String commitID) {
         Commit target = Commit.fromFile(commitID);
         String targetBranch = target.getBranch();
-        checkout(targetBranch);
+        if (!targetBranch.equals(Commit.getCurrentBranch())) {
+            checkout(targetBranch);
+        }
         Commit tBHead = Commit.getCurrentCommit();
         for (String filename : tBHead.getBlobsID().keySet()) {
             MyUtils.restrictedDelete(join(CWD, filename));
