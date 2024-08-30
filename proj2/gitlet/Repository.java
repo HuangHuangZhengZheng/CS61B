@@ -77,13 +77,15 @@ public class Repository {
     public static void add(String filename) {
         List<String> names = plainFilenamesIn(CWD);
         boolean found = false;
-        TreeMap<String, String> addedFiles; // tracking files staging for addiction, --->  <Filename, ID>
+        TreeMap<String, String> addedFiles, removedFiles; // <Filename, ID>
         File c = null;
         Commit currentCommit = Commit.getCurrentCommit();
         // read add
         File stagingForAdd = join(STAGING, "add");
+        File stagingForRemove = join(STAGING, "remove");
 
-        addedFiles = readObject(stagingForAdd, TreeMap.class); // see more in Things to avoid in spec!
+        addedFiles = readObject(stagingForAdd, TreeMap.class);
+        removedFiles = readObject(stagingForRemove, TreeMap.class);
 
         // find file
         for (String name : names) {
@@ -102,6 +104,11 @@ public class Repository {
          * if it is already there (as can happen when a file is changed, added, and then
          * changed back to it’s original version).
          * */
+        // first try to update Remove
+        if (removedFiles.containsKey(filename)) {
+            removedFiles.remove(filename);
+            writeObject(stagingForRemove, removedFiles);
+        }
         String foundFileID = sha1(readContents(join(CWD, filename)));
         if (currentCommit.getBlobsID().containsValue(foundFileID)) {
             MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
@@ -224,6 +231,7 @@ public class Repository {
         }
         System.out.println(currentCommit.toString());
     }
+
     public static void globalLog() {
         List<String> commitsID = plainFilenamesIn(Commit.COMMIT_FOLDER);
         for (String id : commitsID) {
