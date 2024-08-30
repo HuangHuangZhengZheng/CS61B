@@ -150,7 +150,9 @@ public class Repository {
         Commit newCommit = new Commit(msg, currentCommit.getID(), currentCommit.getBlobsID());
         TreeMap<String, String> mergedFiles = new TreeMap<>(); // avoid changing the parent's blobsID
         mergedFiles.putAll(currentCommit.getBlobsID());
-
+        mergedFiles.putAll(addedFiles);
+        newCommit.setBlobsID(mergedFiles);
+        newCommit.saveCommit();
         // update "head"
         Commit.setBranchHeadID(currentBranch, newCommit.getID());
 
@@ -176,17 +178,13 @@ public class Repository {
         TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
         removedFiles.clear();
         writeObject(stagingForRemove, removedFiles);
-        // lazily save commit
-        mergedFiles.putAll(addedFiles);
-        newCommit.setBlobsID(mergedFiles);
-        newCommit.saveCommit();
     }
 
     public static void rm(String filename) {
         Commit currentCommit = Commit.getCurrentCommit();
         // assume that add is existed
         TreeMap<String, String> addedFiles = readObject(join(STAGING, "add"), TreeMap.class);
-        if ((!currentCommit.getBlobsID().containsKey(filename)) || (!addedFiles.containsKey(filename))) {
+        if ((!currentCommit.getBlobsID().containsKey(filename)) && (!addedFiles.containsKey(filename))) {
             System.out.println("No reason to remove the file.");
             System.exit(0);
         }
