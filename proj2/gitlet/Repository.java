@@ -139,7 +139,6 @@ public class Repository {
             System.out.println("Please enter a commit message.");
             System.exit(0);
         }
-        // assume that add is existed
         File stagingForAdd = join(STAGING, "add");
         TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
         if (addedFiles == null || addedFiles.isEmpty()) {
