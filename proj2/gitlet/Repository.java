@@ -2,9 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -110,8 +108,9 @@ public class Repository {
             writeObject(stagingForRemove, removedFiles);
         }
         String foundFileID = sha1(readContents(join(CWD, filename)));
-        if (currentCommit.getBlobsID().containsValue(foundFileID)
-                && currentCommit.getBlobsID().containsKey(filename)) {
+        if (currentCommit.getBlobsID().containsKey(filename)
+                && currentCommit.getBlobsID()
+                .get(filename).equals(foundFileID)) {
             MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
             addedFiles.remove(filename);
             writeObject(stagingForAdd, addedFiles);
@@ -157,9 +156,13 @@ public class Repository {
         Commit currentCommit = Commit.getCurrentCommit();
         String currentBranch = Commit.getCurrentBranch();
         Commit newCommit = new Commit(msg, currentCommit.getID(), currentCommit.getBlobsID());
-        TreeMap<String, String> mergedFiles = new TreeMap<>(); // avoid changing the parent's blobsID
+        TreeMap<String, String> mergedFiles = new TreeMap<>();
+        // avoid changing the parent's blobsID
         mergedFiles.putAll(currentCommit.getBlobsID());
         mergedFiles.putAll(addedFiles);
+        for (String removal : removedFiles.keySet()) {
+            mergedFiles.remove(removal);
+        }
         newCommit.setBlobsID(mergedFiles);
         newCommit.saveCommit();
         // update "head"
@@ -191,7 +194,8 @@ public class Repository {
         Commit currentCommit = Commit.getCurrentCommit();
         // assume that add is existed
         TreeMap<String, String> addedFiles = readObject(join(STAGING, "add"), TreeMap.class);
-        if ((!currentCommit.getBlobsID().containsKey(filename)) && (!addedFiles.containsKey(filename))) {
+        if ((!currentCommit.getBlobsID().containsKey(filename))
+                && (!addedFiles.containsKey(filename))) {
             System.out.println("No reason to remove the file.");
             System.exit(0);
         }
@@ -199,12 +203,13 @@ public class Repository {
         File stagingForRemove = join(STAGING, "remove");
         TreeMap<String, String> removedFiles;
         if (stagingForRemove.exists()) {
-            removedFiles = readObject(stagingForRemove, TreeMap.class); // see more in Things to avoid in spec!
+            removedFiles = readObject(stagingForRemove, TreeMap.class);
         } else {
             removedFiles = new TreeMap<>();
         }
         /**
-         *  If the file is tracked in the current commit, stage it for removal and remove the file
+         *  If the file is tracked in the current commit,
+         *  stage it for removal and remove the file
          *  from the working directory if the user has not already done so
          *  (do not remove it unless it is tracked in the current commit).
          * */
@@ -279,7 +284,8 @@ public class Repository {
         // === Removed Files ===
         System.out.println("=== Removed Files ===");
         if (join(STAGING, "remove").exists()) {
-            TreeMap<String, String> removedFiles = readObject(join(STAGING, "remove"), TreeMap.class);
+            TreeMap<String, String> removedFiles = readObject(join(STAGING, "remove"),
+                    TreeMap.class);
             for (String filename : removedFiles.keySet()) {
                 System.out.println(filename);
             }
@@ -314,7 +320,9 @@ public class Repository {
             System.exit(0);
         }
         File checkedoutFile = join(CWD, filename);
-        writeContents(checkedoutFile, readContents(join(Blob.BLOB_FOLDER, commit.getBlobsID().get(filename))));
+        writeContents(checkedoutFile,
+                readContents(join(Blob.BLOB_FOLDER,
+                        commit.getBlobsID().get(filename))));
 
         // The new version of the file is not staged. If add exists, then update add
         File stagingForAdd = join(STAGING, "add");
@@ -346,20 +354,24 @@ public class Repository {
         // then switch the branch
         Commit.checkHead(branchname);
         Commit changedCommit = Commit.getCurrentCommit();
-        for (String filename : changedCommit.getBlobsID().keySet()) {
+        for (String filename
+                : changedCommit.getBlobsID().keySet()) {
             if (!originalCommit.getBlobsID().containsKey(filename)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.out.println("There is an untracked file in the way;"
+                        + " delete it, or add and commit it first.");
                 Commit.checkHead(originalBranch); // back to the original branch
                 System.exit(0);
             }
         }
         // first delete those in original branch
-        for (String filename : originalCommit.getBlobsID().keySet()) {
+        for (String filename
+                : originalCommit.getBlobsID().keySet()) {
             MyUtils.restrictedDelete(join(CWD, filename));
         }
         // then add back
         for (String filename : changedCommit.getBlobsID().keySet()) {
-            writeContents(join(CWD, filename), Blob.getBlobContent(changedCommit.getBlobsID().get(filename)));
+            writeContents(join(CWD, filename),
+                    Blob.getBlobContent(changedCommit.getBlobsID().get(filename)));
         }
         // clean staging area
         MyUtils.restrictedDeleteAll(STAGING_FILES);
@@ -400,9 +412,11 @@ public class Repository {
             MyUtils.restrictedDelete(join(CWD, filename));
         }
         for (String filename : target.getBlobsID().keySet()) {
-            writeContents(join(CWD, filename), Blob.getBlobContent(target.getBlobsID().get(filename)));
+            writeContents(join(CWD, filename),
+                    Blob.getBlobContent(target.getBlobsID().get(filename)));
         }
-        writeContents(join(Commit.BRANCHES_FOLDER, targetBranch), target.getID());
+        writeContents(join(Commit.BRANCHES_FOLDER,
+                targetBranch), target.getID());
     }
 
     public static void merge(String branchname) {
