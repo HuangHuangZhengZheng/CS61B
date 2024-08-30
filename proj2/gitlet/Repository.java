@@ -109,8 +109,8 @@ public class Repository {
         }
         String foundFileID = sha1(readContents(join(CWD, filename)));
         if (currentCommit.getBlobsID().containsKey(filename)
-                && currentCommit.getBlobsID()
-                .get(filename).equals(foundFileID)) {
+                && currentCommit.getBlobsID().
+                get(filename).equals(foundFileID)) {
             MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
             addedFiles.remove(filename);
             writeObject(stagingForAdd, addedFiles);
@@ -304,8 +304,8 @@ public class Repository {
         List<String> commitsID = plainFilenamesIn(Commit.COMMIT_FOLDER);
         // handle shortened id
         for (String id : commitsID) {
-            if (id.substring(0, commitID.length())
-                    .equals(commitID)) {
+            if (id.substring(0, commitID.length()).
+                    equals(commitID)) {
                 commitID = id;
             }
         }
@@ -396,7 +396,8 @@ public class Repository {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
-        if (readContentsAsString(join(Commit.BRANCHES, "head")).equals(branchname)) {
+        if (readContentsAsString(join(Commit.BRANCHES, "head"))
+                .equals(branchname)) {
             System.out.println("Cannot remove the current branch.");
             System.exit(0);
         }
@@ -417,7 +418,6 @@ public class Repository {
             writeContents(join(CWD, filename),
                     Blob.getBlobContent(target.getBlobsID().get(filename)));
         }
-
         Commit.setBranchHeadID(targetBranch, tBHead.getID());
         clearStagingForAddAndRemove();
     }

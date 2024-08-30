@@ -71,6 +71,11 @@ public class Commit implements Serializable {
     }
 
     public static Commit fromFile(String id) {
+        List<String> ids = plainFilenamesIn(join(COMMIT_FOLDER));
+        if (!ids.contains(id)) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
         return Utils.readObject(Utils.join(COMMIT_FOLDER, id), Commit.class);
     }
 
