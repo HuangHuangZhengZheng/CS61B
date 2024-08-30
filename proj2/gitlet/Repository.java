@@ -150,9 +150,6 @@ public class Repository {
         Commit newCommit = new Commit(msg, currentCommit.getID(), currentCommit.getBlobsID());
         TreeMap<String, String> mergedFiles = new TreeMap<>(); // avoid changing the parent's blobsID
         mergedFiles.putAll(currentCommit.getBlobsID());
-        mergedFiles.putAll(addedFiles);
-        newCommit.setBlobsID(mergedFiles);
-        newCommit.saveCommit();
 
         // update "head"
         Commit.setBranchHeadID(currentBranch, newCommit.getID());
@@ -179,6 +176,10 @@ public class Repository {
         TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
         removedFiles.clear();
         writeObject(stagingForRemove, removedFiles);
+        // lazily save commit
+        mergedFiles.putAll(addedFiles);
+        newCommit.setBlobsID(mergedFiles);
+        newCommit.saveCommit();
     }
 
     public static void rm(String filename) {
