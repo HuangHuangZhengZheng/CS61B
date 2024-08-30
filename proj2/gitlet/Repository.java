@@ -407,6 +407,7 @@ public class Repository {
     public static void reset(String commitID) {
         Commit target = Commit.fromFile(commitID);
         String targetBranch = target.getBranch();
+        Commit.setBranchHeadID(targetBranch, target.getID());
         if (!targetBranch.equals(Commit.getCurrentBranch())) {
             checkout(targetBranch);
         }
@@ -418,7 +419,6 @@ public class Repository {
             writeContents(join(CWD, filename),
                     Blob.getBlobContent(target.getBlobsID().get(filename)));
         }
-        Commit.setBranchHeadID(targetBranch, tBHead.getID());
         clearStagingForAddAndRemove();
     }
 
