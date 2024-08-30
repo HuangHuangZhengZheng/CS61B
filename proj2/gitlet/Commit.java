@@ -125,16 +125,17 @@ public class Commit implements Serializable {
         } else {
             return String.format(
               "===\ncommit %s\nMerge: %s %s\nDate: %s\n%s\n",
-            ID, parentID.substring(0, 8), secondParentID.substring(0, 8), timestamp, message); // 结尾不需要 \n ?
+            ID, parentID.substring(0, 8), secondParentID.substring(0, 8),
+                    timestamp, message);
         }
     }
 
     private static byte[] serializeTreeMap(TreeMap<String, String> treeMap) {
-        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-             ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)) {
+        try (ByteArrayOutputStream bArrOutS = new ByteArrayOutputStream();
+             ObjectOutputStream objectOutputStream = new ObjectOutputStream(bArrOutS)) {
             objectOutputStream.writeObject(treeMap);
             objectOutputStream.flush();
-            return byteArrayOutputStream.toByteArray();
+            return bArrOutS.toByteArray();
         } catch (IOException e) {
             e.printStackTrace();
             return null;

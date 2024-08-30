@@ -39,7 +39,8 @@ public class Repository {
         if (!GITLET_DIR.exists()) {
             GITLET_DIR.mkdir();
         } else {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.out.println("A Gitlet version-control system "
+                    + "already exists in the current directory.");
             System.exit(0);
         }
         // already init gitlet dir, begin the SA
@@ -101,7 +102,13 @@ public class Repository {
          * changed back to it’s original version).
          * */
         String foundFileID = sha1(readContents(join(CWD, filename)));
-        if (currentCommit.getBlobsID().containsValue(foundFileID) || addedFiles.containsKey(filename)) {
+        if (currentCommit.getBlobsID().containsValue(foundFileID)) {
+            MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
+            addedFiles.remove(filename);
+            writeObject(stagingForAdd, addedFiles);
+            return;
+        }
+        if (addedFiles.containsKey(filename)) {
             MyUtils.restrictedDelete(join(STAGING_FILES, foundFileID));
             addedFiles.remove(filename);
         }
@@ -116,7 +123,7 @@ public class Repository {
         // update the TreeMap
         addedFiles.put(filename, foundFileID);
         // read-modify-write diagram!
-        writeObject(stagingForAdd, addedFiles); // trying to cast, maybe wrong?
+        writeObject(stagingForAdd, addedFiles);
     }
 
     public static void commit(String msg) {
