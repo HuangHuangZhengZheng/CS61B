@@ -207,8 +207,9 @@ public class Repository {
             MyUtils.restrictedDelete(join(CWD, filename));
         }
 
-        // remove from staging area...
-        MyUtils.restrictedDelete(join(STAGING_FILES, addedFiles.get(filename)));
+        if (addedFiles.containsKey(filename)) {
+            MyUtils.restrictedDelete(join(STAGING_FILES, addedFiles.get(filename)));
+        }
         // read-modify-write ---> update the TreeMaps!
         addedFiles.remove(filename);
         writeObject(stagingForRemove, removedFiles);
