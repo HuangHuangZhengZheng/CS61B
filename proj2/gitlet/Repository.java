@@ -140,8 +140,10 @@ public class Repository {
             System.exit(0);
         }
         File stagingForAdd = join(STAGING, "add");
+        File stagingForRemove = join(STAGING, "remove");
         TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
-        if (addedFiles == null || addedFiles.isEmpty()) {
+        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
+        if (addedFiles.isEmpty() && removedFiles.isEmpty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
         }
@@ -180,8 +182,6 @@ public class Repository {
         // clean 'add' and 'remove', wrong? DO NOT DELETE the TreeMaps!
         addedFiles.clear();
         writeObject(stagingForAdd, addedFiles);
-        File stagingForRemove = join(STAGING, "remove");
-        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
         removedFiles.clear();
         writeObject(stagingForRemove, removedFiles);
     }
