@@ -115,9 +115,59 @@ public class Commit implements Serializable {
         Commit c = fromFile(headCommitID);
         return c;
     }
+
     public static String getCurrentBranch() {
         return readContentsAsString(join(Commit.BRANCHES, "head"));
     }
+
+    public static String getBranchHeadID(String branch) {
+        return readContentsAsString(join(Commit.BRANCHES_FOLDER, branch));
+    }
+
+    public static Commit findSplitPoint(String commitID1, String commitID2) {
+        Set<String> marked = new TreeSet<>();
+        bfsMark(commitID1, marked);
+        String foundID = bfsFind(commitID2, marked);
+        return fromFile(foundID);
+    }
+    private static void bfsMark(String commitID, Set<String> marked) {
+        // only mark
+        Queue<String> q = new LinkedList<>();
+        q.add(commitID);
+        marked.add(commitID); // mark current commit
+        while (!q.isEmpty()) {
+            String s = q.poll();
+            Commit c = fromFile(s);
+            List<String> parentIDs = new ArrayList<>();
+            parentIDs.add(c.parentID);
+            parentIDs.add(c.secondParentID);
+
+            for (String parentID : parentIDs) {
+                if (!marked.contains(parentID)) {
+                    marked.add(parentID);
+                    q.add(parentID);
+                }
+            }
+        }
+    }
+    private static String bfsFind(String commitID, Set<String> marked) {
+        Queue<String> q = new LinkedList<>();
+        q.add(commitID);
+        while (!q.isEmpty()) {
+            String s = q.poll();
+            Commit c = fromFile(s);
+            List<String> parentIDs = new ArrayList<>();
+            parentIDs.add(c.parentID);
+            parentIDs.add(c.secondParentID);
+            for (String parentID : parentIDs) {
+                if (marked.contains(parentID)) {
+                    return parentID;
+                }
+            }
+        }
+        return "LP$"; // avoid null
+    }
+
 
 
     // helper functions below

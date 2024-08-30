@@ -421,8 +421,24 @@ public class Repository {
         }
         clearStagingForAddAndRemove();
     }
-
+    // finally
     public static void merge(String branchname) {
+        // 确定SP
+        Commit splitPoint = Commit.findSplitPoint(Commit.getCurrentCommit().getID(),
+                Commit.getBranchHeadID(branchname));
+
+        if (splitPoint.getID().equals(Commit.getBranchHeadID(branchname))) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            System.exit(0);
+        }
+        if (splitPoint.getBranch().equals(branchname)) {
+            checkout(branchname);
+            System.out.println("Current branch fast-forwarded.");
+            System.exit(0);
+        }
+        // 开始制定写入规则
+
+        // 写入之
 
     }
     // helper functions
