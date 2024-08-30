@@ -377,14 +377,7 @@ public class Repository {
         }
         // clean staging area, add and reomove
         MyUtils.restrictedDeleteAll(STAGING_FILES);
-        File stagingForAdd = join(STAGING, "add");
-        File stagingForRemove = join(STAGING, "remove");
-        TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
-        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
-        addedFiles.clear();
-        removedFiles.clear();
-        writeObject(stagingForAdd, addedFiles);
-        writeObject(stagingForRemove, removedFiles);
+        clearStagingForAddAndRemove();
     }
 
     public static void branch(String branch) {
@@ -424,12 +417,23 @@ public class Repository {
             writeContents(join(CWD, filename),
                     Blob.getBlobContent(target.getBlobsID().get(filename)));
         }
-        writeContents(join(Commit.BRANCHES_FOLDER,
-                targetBranch), target.getID());
+
+        Commit.setBranchHeadID(targetBranch, tBHead.getID());
+        clearStagingForAddAndRemove();
     }
 
     public static void merge(String branchname) {
 
     }
-
+    // helper functions
+    private static void clearStagingForAddAndRemove() {
+        File stagingForAdd = join(STAGING, "add");
+        File stagingForRemove = join(STAGING, "remove");
+        TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
+        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
+        addedFiles.clear();
+        removedFiles.clear();
+        writeObject(stagingForAdd, addedFiles);
+        writeObject(stagingForRemove, removedFiles);
+    }
 }
