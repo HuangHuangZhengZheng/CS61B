@@ -186,6 +186,69 @@ public class Commit implements Serializable {
         return "L$P"; // avoid null
     }
 
+    public static String getCorrectID(String filename, Commit s, Commit c, Commit o) {
+        if (s.getBlobsID().containsKey(filename)) {
+            // assume that sID is not NULL!
+            String sID = s.getBlobsID().get(filename);
+            String cID = c.getBlobsID().get(filename);
+            String oID = o.getBlobsID().get(filename);
+            // 6, 7
+            if ((cID != null && cID.equals(sID)) && oID == null) {
+                return null; // special cases
+            }
+            if ((oID != null && oID.equals(sID)) && cID == null) {
+                return null;
+            }
+            // 1, 2
+            if (!Objects.equals(sID, oID) && Objects.equals(sID, cID)) {
+                return oID;
+            }
+            if (!Objects.equals(sID, cID) && Objects.equals(sID, oID)) {
+                return cID;
+            }
+
+            // 3.1 in the same way
+            if (Objects.equals(cID, oID)) {
+                return cID;
+            }
+            // 3.2 Conflict!
+            if ((!Objects.equals(sID, oID))
+                    && (!Objects.equals(sID, cID))
+                    && (!Objects.equals(cID, oID))) {
+                System.out.println("Encountered a merge conflict.");
+                // create the conflict file in BlobFolder
+                // then return the new ID
+                String contentsOfCurrent = "";
+                String contentsOfGiven = "";
+                if (cID != null) {
+                    contentsOfCurrent = Blob.getBlobContentAsString(cID);
+                }
+                if (oID != null) {
+                    contentsOfGiven = Blob.getBlobContentAsString(oID);
+                }
+                String conflictContents = String.format(
+                        "<<<<<<< HEAD\n%s=======\n%s>>>>>>>",
+                        contentsOfCurrent, contentsOfGiven
+                );
+                // directly save into Blobs
+                String conflictContentsID = Utils.sha1(conflictContents); // may wrong
+                Utils.writeContents(join(Blob.BLOB_FOLDER, conflictContentsID), conflictContents);
+                return conflictContentsID;
+            }
+
+        } else {
+            // 4, 5
+            if (!o.blobsID.containsKey(filename) && c.blobsID.containsKey(filename)) {
+                return c.blobsID.get(filename);
+            }
+
+            if (!c.blobsID.containsKey(filename) && o.blobsID.containsKey(filename)) {
+                return o.blobsID.get(filename);
+            }
+        }
+        return "L$P"; // avoid null
+    }
+
 
 
     // helper functions below

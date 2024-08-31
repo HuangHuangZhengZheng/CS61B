@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -444,6 +445,10 @@ public class Repository {
          * */
 
         // find SP
+        Commit currentBranchCommit = Commit.getCurrentCommit();
+        Commit givenBranchCommit = Commit.fromFile(Commit.getBranchHeadID(
+                branchname
+        ));
         Commit splitPoint = Commit.findSplitPoint(Commit.getCurrentCommit().getID(),
                 Commit.getBranchHeadID(branchname));
         if (splitPoint.getID()
@@ -464,14 +469,80 @@ public class Repository {
             System.exit(0);
         }
 
-        // 开始制定写入规则
-        System.out.println("pass all the IF CASES, now begin the merge operation.");
-        System.exit(0);
+        // 以上情况全部通过，现在开始制定写入规则 create the TreeMap for new commit
+        TreeMap<String, String> collectedBlobsID = new TreeMap<>();
+        TreeMap<String, String> blobsFI = new TreeMap<>();
+        // collect all the filenames
+        collectedBlobsID.putAll(currentBranchCommit.getBlobsID());
+        collectedBlobsID.putAll(givenBranchCommit.getBlobsID());
+        collectedBlobsID.putAll(splitPoint.getBlobsID());
+        // find the correct file ID
+        for (String filename : collectedBlobsID.keySet()) {
+            String correctID = Commit.getCorrectID(filename,
+                    splitPoint, currentBranchCommit, givenBranchCommit);
 
+            blobsFI.put(filename, correctID);
+        }
+        // check carefully before do sth
+        List<String> originalFileNames = plainFilenamesIn(CWD);
+        for (String filename : originalFileNames) {
+            String id = sha1(readContents(join(CWD, filename)));
+            if ((!currentBranchCommit.getBlobsID().containsKey(filename))
+                    && (blobsFI.containsKey(filename))
+                    && (!Objects.equals(blobsFI.get(filename), id))) {
+                System.out.println("There is an untracked file"
+                        + " in the way; delete it, or add and "
+                        + "commit it first.");
+                System.exit(0);
+            }
+        }
+        // remove null ID and reset the collectedBlobs
+        collectedBlobsID.clear();
+        originalFileNames.clear(); // for keep to delete
+        for (String filename : blobsFI.keySet()) {
+            if (blobsFI.get(filename) == null) {
+                // check carefully before do sth
+                originalFileNames.add(filename);
+                // keep to delete
+                continue;
+            }
+            collectedBlobsID.put(filename, blobsFI.get(filename));
+        }
+        // If no changes......
+        if (collectedBlobsID.equals(currentBranchCommit.getBlobsID())) {
+            System.out.println("No changes added to the commit.");
+            System.exit(0);
+        }
+        // remove null in CWD
+        for (String filename : originalFileNames) {
+            MyUtils.restrictedDelete(join(CWD, filename));
+        }
+        // put into CWD
+        for (String filename : collectedBlobsID.keySet()) {
+            writeContents(join(CWD, filename),
+                    Blob.getBlobContent(collectedBlobsID.get(filename)));
+        }
 
-        // 写入之
+        // done with blobsFI
+        /**
+         * mergedCommit branch is the current branch...
+         * */
+        String mergeInfo = "Merged " + branchname
+                + " into " + Commit.getCurrentBranch() + ".";
 
+        Commit mergedCommit = new Commit(mergeInfo,
+                currentBranchCommit.getID(), currentBranchCommit.getBlobsID());
+
+        mergedCommit.setSecondParentID(givenBranchCommit.getID());
+        mergedCommit.setBlobsID(collectedBlobsID); // set!
+        mergedCommit.saveCommit();
+        // update the two branch heads
+        Commit.setBranchHeadID(Commit.getCurrentBranch(), mergedCommit.getID());
+        Commit.setBranchHeadID(branchname, mergedCommit.getID());
     }
+
+
+
     // helper functions
 
     private static void clearStagingForAddAndRemove() {
@@ -495,4 +566,5 @@ public class Repository {
         }
         return false;
     }
+
 }
