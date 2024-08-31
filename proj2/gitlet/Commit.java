@@ -227,7 +227,7 @@ public class Commit implements Serializable {
                     contentsOfGiven = Blob.getBlobContentAsString(oID);
                 }
                 String conflictContents = String.format(
-                        "<<<<<<< HEAD\n%s=======\n%s>>>>>>>",
+                        "<<<<<<< HEAD\n%s=======\n%s>>>>>>>\n",
                         contentsOfCurrent, contentsOfGiven
                 );
                 // directly save into Blobs
