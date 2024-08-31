@@ -2,10 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
@@ -473,7 +470,7 @@ public class Repository {
             }
         } // remove null ID and reset the collectedBlobs
         collectedBlobsID.clear();
-        originalFileNames.clear(); // for keep to delete
+        originalFileNames = new ArrayList<>(); // for keep to delete
         for (String filename : blobsFI.keySet()) {
             if (blobsFI.get(filename) == null) {
                 // check carefully before do sth
