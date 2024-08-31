@@ -139,11 +139,12 @@ public class Commit implements Serializable {
             String s = q.poll();
             Commit c = fromFile(s);
             List<String> parentIDs = new ArrayList<>();
+            // can append null into the list
             parentIDs.add(c.parentID);
             parentIDs.add(c.secondParentID);
 
             for (String parentID : parentIDs) {
-                if (!marked.contains(parentID)) {
+                if ((parentID != null) && !marked.contains(parentID)) {
                     marked.add(parentID);
                     q.add(parentID);
                 }
