@@ -391,11 +391,7 @@ public class Repository {
     }
 
     public static void removeBranch(String branchname) {
-        List<String> branchNames = plainFilenamesIn(Commit.BRANCHES_FOLDER);
-        if (!branchNames.contains(branchname)) {
-            System.out.println("A branch with that name does not exist.");
-            System.exit(0);
-        }
+        Commit.validateBranch(branchname);
         if (readContentsAsString(join(Commit.BRANCHES, "head"))
                 .equals(branchname)) {
             System.out.println("Cannot remove the current branch.");
@@ -423,25 +419,59 @@ public class Repository {
     }
     // finally
     public static void merge(String branchname) {
-        // 确定SP
-        Commit splitPoint = Commit.findSplitPoint(Commit.getCurrentCommit().getID(),
-                Commit.getBranchHeadID(branchname));
-
-        if (splitPoint.getID().equals(Commit.getBranchHeadID(branchname))) {
-            System.out.println("Given branch is an ancestor of the current branch.");
+        if (!stagingForAddAndRemoveIsCleared()) {
+            System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
-        if (splitPoint.getBranch().equals(branchname)) {
+        //  If a branch with the given name does not exist
+        Commit.validateBranch(branchname);
+        // if merge itself...
+        if (Commit.getCurrentBranch().equals(branchname)) {
+            System.out.println("Cannot merge a branch with itself.");
+            System.exit(0);
+        }
+
+        /**
+         * 我认为应该预先备好 新的Commit的BlobID然后再来判断
+         * If merge would generate an error because the commit that
+         * it does has no changes in it, just let the normal commit
+         * error message for this go through.
+         *
+         * If an untracked file
+         * in the current commit would be overwritten or deleted by
+         * the merge, print There is an untracked file in the way;
+         * delete it, or add and commit it first. and exit;
+         * */
+
+        // find SP
+        Commit splitPoint = Commit.findSplitPoint(Commit.getCurrentCommit().getID(),
+                Commit.getBranchHeadID(branchname));
+        if (splitPoint.getID()
+                .equals(Commit.getBranchHeadID(branchname))) {
+            System.out.println("Given branch is an ancestor"
+                    + " of the current branch.");
+            System.exit(0);
+        }
+        /**
+         * If the split point is the current branch, then
+         * the effect is to check out the given branch
+         * */
+        // special merges below...
+        if (splitPoint.getID()
+                .equals(Commit.getCurrentCommit().getID())) {
             checkout(branchname);
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
         }
+
         // 开始制定写入规则
+
 
         // 写入之
 
     }
     // helper functions
+
     private static void clearStagingForAddAndRemove() {
         File stagingForAdd = join(STAGING, "add");
         File stagingForRemove = join(STAGING, "remove");
@@ -451,5 +481,16 @@ public class Repository {
         removedFiles.clear();
         writeObject(stagingForAdd, addedFiles);
         writeObject(stagingForRemove, removedFiles);
+    }
+
+    private static boolean stagingForAddAndRemoveIsCleared() {
+        File stagingForAdd = join(STAGING, "add");
+        File stagingForRemove = join(STAGING, "remove");
+        TreeMap<String, String> addedFiles = readObject(stagingForAdd, TreeMap.class);
+        TreeMap<String, String> removedFiles = readObject(stagingForRemove, TreeMap.class);
+        if (addedFiles.isEmpty() && removedFiles.isEmpty()) {
+            return true;
+        }
+        return false;
     }
 }

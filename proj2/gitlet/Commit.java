@@ -98,6 +98,15 @@ public class Commit implements Serializable {
         }
         Utils.writeContents(b, commitID);
     }
+
+    public static void validateBranch(String branch) {
+        List<String> branches = plainFilenamesIn(BRANCHES_FOLDER);
+        if (!branches.contains(branch)) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+    }
+
     // update or create head, storing String current branch_name
     public static void checkHead(String branchName) {
         File h = Utils.join(BRANCHES, "head");
