@@ -148,21 +148,25 @@ public class Commit implements Serializable {
             String s = q.poll();
             Commit c = fromFile(s);
             List<String> parentIDs = new ArrayList<>();
-            // can append null into the list
-            parentIDs.add(c.parentID);
-            parentIDs.add(c.secondParentID);
+            // can append null into the list, do not want null
+            if (c.parentID != null) parentIDs.add(c.parentID);
+            if (c.secondParentID != null) parentIDs.add(c.secondParentID);
 
             for (String parentID : parentIDs) {
-                if ((parentID != null) && !marked.contains(parentID)) {
+                if (!marked.contains(parentID)) {
                     marked.add(parentID);
                     q.add(parentID);
                 }
             }
         }
     }
+
     private static String bfsFind(String commitID, Set<String> marked) {
         Queue<String> q = new LinkedList<>();
         q.add(commitID);
+        if (marked.contains(commitID)) {
+            return commitID;
+        }
         while (!q.isEmpty()) {
             String s = q.poll();
             Commit c = fromFile(s);
