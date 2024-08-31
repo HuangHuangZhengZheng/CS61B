@@ -424,27 +424,11 @@ public class Repository {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
-        //  If a branch with the given name does not exist
         Commit.validateBranch(branchname);
-        // if merge itself...
         if (Commit.getCurrentBranch().equals(branchname)) {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
         }
-
-        /**
-         * 我认为应该预先备好 新的Commit的BlobID然后再来判断
-         * If merge would generate an error because the commit that
-         * it does has no changes in it, just let the normal commit
-         * error message for this go through.
-         *
-         * If an untracked file
-         * in the current commit would be overwritten or deleted by
-         * the merge, print There is an untracked file in the way;
-         * delete it, or add and commit it first. and exit;
-         * */
-
-        // find SP
         Commit currentBranchCommit = Commit.getCurrentCommit();
         Commit givenBranchCommit = Commit.fromFile(Commit.getBranchHeadID(
                 branchname
@@ -457,18 +441,12 @@ public class Repository {
                     + " of the current branch.");
             System.exit(0);
         }
-        /**
-         * If the split point is the current branch, then
-         * the effect is to check out the given branch
-         * */
-        // special merges below...
         if (splitPoint.getID()
                 .equals(Commit.getCurrentCommit().getID())) {
             checkout(branchname);
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
         }
-
         // 以上情况全部通过，现在开始制定写入规则 create the TreeMap for new commit
         TreeMap<String, String> collectedBlobsID = new TreeMap<>();
         TreeMap<String, String> blobsFI = new TreeMap<>();
@@ -480,10 +458,8 @@ public class Repository {
         for (String filename : collectedBlobsID.keySet()) {
             String correctID = Commit.getCorrectID(filename,
                     splitPoint, currentBranchCommit, givenBranchCommit);
-
             blobsFI.put(filename, correctID);
-        }
-        // check carefully before do sth
+        } // check carefully before do sth
         List<String> originalFileNames = plainFilenamesIn(CWD);
         for (String filename : originalFileNames) {
             String id = sha1(readContents(join(CWD, filename)));
@@ -495,8 +471,7 @@ public class Repository {
                         + "commit it first.");
                 System.exit(0);
             }
-        }
-        // remove null ID and reset the collectedBlobs
+        } // remove null ID and reset the collectedBlobs
         collectedBlobsID.clear();
         originalFileNames.clear(); // for keep to delete
         for (String filename : blobsFI.keySet()) {
@@ -507,36 +482,25 @@ public class Repository {
                 continue;
             }
             collectedBlobsID.put(filename, blobsFI.get(filename));
-        }
-        // If no changes......
+        } // If no changes......
         if (collectedBlobsID.equals(currentBranchCommit.getBlobsID())) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
-        }
-        // remove null in CWD
+        } // remove null in CWD
         for (String filename : originalFileNames) {
             MyUtils.restrictedDelete(join(CWD, filename));
-        }
-        // put into CWD
+        } // put into CWD
         for (String filename : collectedBlobsID.keySet()) {
             writeContents(join(CWD, filename),
                     Blob.getBlobContent(collectedBlobsID.get(filename)));
-        }
-
-        // done with blobsFI
-        /**
-         * mergedCommit branch is the current branch...
-         * */
+        } // done with blobsFI
         String mergeInfo = "Merged " + branchname
                 + " into " + Commit.getCurrentBranch() + ".";
-
         Commit mergedCommit = new Commit(mergeInfo,
                 currentBranchCommit.getID(), currentBranchCommit.getBlobsID());
-
         mergedCommit.setSecondParentID(givenBranchCommit.getID());
         mergedCommit.setBlobsID(collectedBlobsID); // set!
-        mergedCommit.saveCommit();
-        // update the two branch heads
+        mergedCommit.saveCommit(); // update the two branch heads
         Commit.setBranchHeadID(Commit.getCurrentBranch(), mergedCommit.getID());
         Commit.setBranchHeadID(branchname, mergedCommit.getID());
     }
