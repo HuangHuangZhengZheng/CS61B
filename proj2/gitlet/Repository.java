@@ -465,6 +465,8 @@ public class Repository {
         }
 
         // 开始制定写入规则
+        System.out.println("You have uncommitted changes.");
+        System.exit(0);
 
 
         // 写入之

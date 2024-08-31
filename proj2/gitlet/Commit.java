@@ -183,7 +183,7 @@ public class Commit implements Serializable {
                 }
             }
         }
-        return "LP$"; // avoid null
+        return "L$P"; // avoid null
     }
 
 
