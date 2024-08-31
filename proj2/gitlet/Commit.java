@@ -149,8 +149,12 @@ public class Commit implements Serializable {
             Commit c = fromFile(s);
             List<String> parentIDs = new ArrayList<>();
             // can append null into the list, do not want null
-            if (c.parentID != null) parentIDs.add(c.parentID);
-            if (c.secondParentID != null) parentIDs.add(c.secondParentID);
+            if (c.parentID != null) {
+                parentIDs.add(c.parentID);
+            }
+            if (c.secondParentID != null) {
+                parentIDs.add(c.secondParentID);
+            }
 
             for (String parentID : parentIDs) {
                 if (!marked.contains(parentID)) {
