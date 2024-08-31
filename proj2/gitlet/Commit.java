@@ -261,8 +261,8 @@ public class Commit implements Serializable {
         } else {
             return String.format(
               "===\ncommit %s\nMerge: %s %s\nDate: %s\n%s\n",
-            ID, parentID.substring(0, 8), secondParentID.substring(0, 8),
-                    timestamp, message);
+            ID, parentID.substring(0, 7), secondParentID.substring(0, 7),
+                    timestamp, message); // 7?
         }
     }
 

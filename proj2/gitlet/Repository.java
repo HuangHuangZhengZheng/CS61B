@@ -428,8 +428,7 @@ public class Repository {
         }
         Commit currentBranchCommit = Commit.getCurrentCommit();
         Commit givenBranchCommit = Commit.fromFile(Commit.getBranchHeadID(
-                branchname
-        ));
+                branchname));
         Commit splitPoint = Commit.findSplitPoint(Commit.getCurrentCommit().getID(),
                 Commit.getBranchHeadID(branchname));
         if (splitPoint.getID()
@@ -444,10 +443,8 @@ public class Repository {
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
         }
-        // 以上情况全部通过，现在开始制定写入规则 create the TreeMap for new commit
         TreeMap<String, String> collectedBlobsID = new TreeMap<>();
         TreeMap<String, String> blobsFI = new TreeMap<>();
-        // collect all the filenames
         collectedBlobsID.putAll(currentBranchCommit.getBlobsID());
         collectedBlobsID.putAll(givenBranchCommit.getBlobsID());
         collectedBlobsID.putAll(splitPoint.getBlobsID());
@@ -473,9 +470,7 @@ public class Repository {
         originalFileNames = new ArrayList<>(); // for keep to delete
         for (String filename : blobsFI.keySet()) {
             if (blobsFI.get(filename) == null) {
-                // check carefully before do sth
                 originalFileNames.add(filename);
-                // keep to delete
                 continue;
             }
             collectedBlobsID.put(filename, blobsFI.get(filename));
